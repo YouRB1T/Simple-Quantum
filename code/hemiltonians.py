@@ -1,4 +1,3 @@
-import networkx as nx
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.circuit.library import QAOAAnsatz
 
@@ -154,4 +153,3 @@ def qaoa_ansatz_from_hemiltonians(cost_hamiltonian_op, mixing_hamiltonian_op):
         QAOAAnsatz - квантовая вариационная схема
     """
     return QAOAAnsatz(cost_operator=cost_hamiltonian_op, mixer_operator=mixing_hamiltonian_op)
-
