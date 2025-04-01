@@ -1,49 +1,32 @@
-from qiskit.quantum_info import SparsePauliOp
+import numpy as np
+from qiskit.quantum_info import SparsePauliOp, Pauli
 from qiskit.circuit.library import QAOAAnsatz
 
-
-def max_cut_cost_hemiltonian(edges, num_vertices):
-    """
-    Функция возвращает гемильтониан стоимости для задачи о максимальном разрезе
-    Args:
-        edges: ребра графа
-        num_vertices: кол-во вершин графа
-
-    Returns:
-        SparsePauliOp гемильтониан стоимости в форме опратора Паули
-    """
-    n = num_vertices
-    pauli_terms = []
+def max_cut_hemiltonian(ages, n):
+    pauli_list = []
     coeffs = []
+    shift = 0
 
-    for i, j in edges:
-        z_terms = ['I'] * n
-        z_terms[i], z_terms[j] = 'Z', 'Z'
-        pauli_terms.append("".join(z_terms))
+    for i, j, w in ages:
+        x_p = np.zeros(n, dtype=bool)
+        z_p = np.zeros(n, dtype=bool)
+        z_p[i] = True
+        z_p[j] = True
+        pauli_list.append(Pauli((z_p, x_p)))
         coeffs.append(-0.5)
+        shift += 0.5
 
-    return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+    for i, j, w in ages:
+        x_p = np.zeros(n, dtype=bool)
+        z_p = np.zeros(n, dtype=bool)
+        z_p[i] = True
+        z_p[j] = True
+        pauli_list.append(Pauli((z_p, x_p)))
+        coeffs.append(1.0)
 
+    shift += n
 
-def max_cat_mixing_hemiltonian(num_vertices):
-    """
-    Фнкция задает гемильтониан смешивания для залачи максимального разреза
-    Args:
-        num_vertices: кол-во вершин графа
-
-    Returns:
-        SparsePauliOp гемильтониан смешивания в форме опратора Паули
-    """
-    pauli_terms = []
-    coeffs = []
-
-    for i in range(num_vertices):
-        term = ["I"] * num_vertices
-        term[i] = "X"
-        pauli_terms.append("".join(term))
-        coeffs.append(-1.0)
-
-    return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+    return SparsePauliOp(pauli_list, coeffs=coeffs), shift
 
 
 def tsp_cost_hemiltonian(n, distance_matrix):
@@ -142,14 +125,15 @@ def graph_coloring_mixing_hemiltonian(n, k):
     return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
 
 
-def qaoa_ansatz_from_hemiltonians(cost_hamiltonian_op, mixing_hamiltonian_op):
+def qaoa_ansatz_from_hemiltonians(cost_hamiltonian_op, mixing_hamiltonian_op, reps):
     """
     Функция, для составления общего гемильтониана задачи для алгоритма QAOA
     Args:
         cost_hamiltonian_op: гемильтониан стоимости для алгоритма
         mixing_hamiltonian_op: гемильтониан смешивания для алгоритма
+        reps: кол-во слоев
 
     Returns:
         QAOAAnsatz - квантовая вариационная схема
     """
-    return QAOAAnsatz(cost_operator=cost_hamiltonian_op, mixer_operator=mixing_hamiltonian_op)
+    return QAOAAnsatz(cost_operator=cost_hamiltonian_op, mixer_operator=mixing_hamiltonian_op, reps=reps)
