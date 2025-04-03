@@ -29,6 +29,8 @@ def max_cut_hemiltonian(ages, n):
     return SparsePauliOp(pauli_list, coeffs=coeffs), shift
 
 
+
+
 def tsp_cost_hemiltonian(n, distance_matrix):
     """
     Функция нахождения гемильтониана стоимости для задачи комивояджера
