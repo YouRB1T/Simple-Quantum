@@ -3,7 +3,7 @@ import random
 import time
 
 
-def tsp_objective_function(solution, distance_matrix):
+def objective_function(solution, distance_matrix):
     """
     Вычисляет длину маршрута коммивояжера по заданной матрице расстояний.
     :param solution: маршрут (перестановка городов)

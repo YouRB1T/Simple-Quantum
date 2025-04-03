@@ -1,7 +1,7 @@
 import random
 
 
-def create_objective_function(edges, partition, penalty_weight=1.0):
+def objective_function(edges, partition, penalty_weight=1.0):
     """
     Создаёт целевую функцию для задачи Max-Cut на основе графа.
 
@@ -46,6 +46,7 @@ def generate_neighbor_solution(partition):
     new_partition[vertex_to_change] = 1 - new_partition[vertex_to_change]
     return new_partition
 
+
 def crossover(parent1, parent2):
     """
     Выполняет одноточечное скрещивание между двумя решениями.
@@ -59,3 +60,7 @@ def crossover(parent1, parent2):
     """
     crossover_point = random.randint(1, len(parent1) - 1)
     return parent1[:crossover_point] + parent2[crossover_point:]
+
+
+def mutate(child):
+    return child

@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 
-def simulated_annealing(objective_function, initial_solution, generate_neighbor_solution, num_vertices,
+def simulated_annealing(objective_function, initial_solution, generate_neighbor_solution, num_vertices, edges,
                                t=1000, t_min=0.01, alpha=0.95, max_iterations=1000):
     """
     Алгоритм симуляции отжига
@@ -21,16 +21,15 @@ def simulated_annealing(objective_function, initial_solution, generate_neighbor_
     """
     s = initial_solution(num_vertices)
     best_solution = s.copy()
-    best_value = objective_function(s)
+    best_value = objective_function(edges, s)
 
-    times = []
     values = []
     start_time = time.time()
     iteration = 0
 
     while t > t_min and iteration < max_iterations:
         s_ = generate_neighbor_solution(s)
-        delta = objective_function(s_) - objective_function(s)
+        delta = objective_function(edges, s_) - objective_function(edges, s)
 
         if delta > 0:
             s = s_.copy()
@@ -39,7 +38,7 @@ def simulated_annealing(objective_function, initial_solution, generate_neighbor_
             if random.uniform(0, 1) < p:
                 s = s_.copy()
 
-        current_value = objective_function(s)
+        current_value = objective_function(edges, s)
         if current_value > best_value:
             best_solution = s.copy()
             best_value = current_value
@@ -54,7 +53,7 @@ def simulated_annealing(objective_function, initial_solution, generate_neighbor_
     return best_solution, best_value, ans_time, ans_value
 
 
-def genetic_algorithm(objective_function, generate_solution, mutate, crossover,
+def genetic_algorithm(objective_function, initial_solution, generate_solution, mutate, crossover, num_vertices, edges,
                       population_size=50, generations=100, mutation_rate=0.1):
     """
     Простая реализация генетического алгоритма
@@ -67,11 +66,13 @@ def genetic_algorithm(objective_function, generate_solution, mutate, crossover,
     :param generations: кол-во поколений
     :param mutation_rate: вероятность мутации
     :return: taple(person_of_population, working_time)
-                возвращаем лучшего потомка, который будет лучшим по целевой функцииБ а также ремя работы метода
+                возвращаем лучшего потомка, который будет лучшим по целевой функции, а также ремя работы метода
     """
     start_time = time.time()
 
-    population = [generate_solution() for _ in range(population_size)]
+    s = initial_solution(num_vertices)
+
+    population = [generate_solution(edges, s) for _ in range(population_size)]
 
     for _ in range(generations):
         population = sorted(population, key=objective_function, reverse=True)

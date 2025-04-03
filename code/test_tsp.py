@@ -172,7 +172,6 @@ if __name__ == "__main__":
     from qiskit_algorithms import QAOA
     from qiskit_algorithms.optimizers import COBYLA
     from qiskit.primitives import Sampler
-    from qiskit_optimization.applications import Tsp
 
     N = 3
     adj_matrix = np.array([
@@ -200,7 +199,6 @@ if __name__ == "__main__":
     print("Оптимальное состояние (битовая строка):", optimal_state)
 
     x = np.array([int(bit) for bit in optimal_state])
-    tsp = Tsp(adj_matrix)
     z = tsp.interpret(x)
     print("Решение TSP (порядок посещения городов):", z)
     print("Целевое значение решения (общее расстояние):", tsp.tsp_value(z, adj_matrix))

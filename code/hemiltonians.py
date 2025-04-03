@@ -29,53 +29,172 @@ def max_cut_hemiltonian(ages, n):
     return SparsePauliOp(pauli_list, coeffs=coeffs), shift
 
 
-
-
-def tsp_cost_hemiltonian(n, distance_matrix):
+# https://qiskit-community.github.io/qiskit-optimization/tutorials/06_examples_max_cut_and_tsp.html
+def tsp_hamiltonian(adj_matrix, N, A, edges, partition, penalty_weight=1.0):
     """
-    Функция нахождения гемильтониана стоимости для задачи комивояджера
-    Args:
-        n: кол-во вершин в графе
-        distance_matrix: матрица дистанций графа
+    Создаёт гамильтонианы стоимости и смешивания для задачи коммивояжёра (TSP)
+    с дополнительным штрафомt.
 
-    Returns:
-        SparsePauliOp гемильтониан стоимости в форме оператора Паули
+    Аргументы:
+        adj_matrix (np.ndarray): Матрица смежности (расстояния между вершинами).
+        N (int): Количество вершин в графе.
+        A (float): Параметр штрафа для ограничений TSP.
+        edges (list of tuples): Список рёбер (i, j, w) для определения запрещённых переходов.
+        partition (list): Список, указывающий партицию каждой вершины (0 или 1).
+        penalty_weight (float): Вес штрафа, вдохновлённого Max-Cut.
+
+    Возвращает:
+        cost_hamiltonian (SparsePauliOp): Гамильтониан стоимости.
+        cost_shift (float): Постоянное смещение гамильтониана стоимости.
+        mixing_hamiltonian (SparsePauliOp): Гамильтониан смешивания (сумма операторов X).
+        mixing_shift (float): Постоянное смещение гамильтониана смешивания (обычно 0).
     """
-    pauli_terms = []
-    coeffs = []
+    #TODO глянуть формулу внимательнее
+    num_qubits = N * N
 
-    for i in range(n):
-        for j in range(i + 1, n):
-            term = ["I"] * (n * n)
-            term[i * n + j] = "Z"
-            term[j * n + i] = "Z"
-            pauli_terms.append("".join(term))
-            coeffs.append(-distance_matrix[i][j])
+    cost_pauli_list = []
+    cost_coeffs = []
+    cost_shift = 0
 
-    return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+    def qubit_index(i, p, N):
+        return i * N + p
 
-
-def tsp_mixing_hemiltonian(n):
-    """
-    Функция нахождения гемильтониана смешивания для задачи комивояджера
-    Args:
-        n: кол-во вершин в графе
-
-    Returns:
-        SparsePauliOp гемильтониан смешивания в форме оператора Паули
-    """
-    pauli_terms = []
-    coeffs = []
-
-    for i in range(n):
-        for j in range(n):
+    for i in range(N):
+        for j in range(N):
             if i != j:
-                term = ["I"] * (n * n)
-                term[i * n + j] = "X"
-                pauli_terms.append("".join(term))
-                coeffs.append(-1.0)
+                w_ij = adj_matrix[i, j]
+                for p in range(N):
+                    p_next = (p + 1) % N
+                    qubit_i = qubit_index(i, p, N)
+                    qubit_j = qubit_index(j, p_next, N)
 
-    return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+                    cost_shift += w_ij / 4
+                    x_p = np.zeros(num_qubits, dtype=bool)
+                    z_p = np.zeros(num_qubits, dtype=bool)
+                    z_p[qubit_i] = True
+                    cost_pauli_list.append(Pauli((z_p, x_p)))
+                    cost_coeffs.append(-w_ij / 4)
+                    x_p = np.zeros(num_qubits, dtype=bool)
+                    z_p = np.zeros(num_qubits, dtype=bool)
+                    z_p[qubit_j] = True
+                    cost_pauli_list.append(Pauli((z_p, x_p)))
+                    cost_coeffs.append(-w_ij / 4)
+                    x_p = np.zeros(num_qubits, dtype=bool)
+                    z_p = np.zeros(num_qubits, dtype=bool)
+                    z_p[qubit_i] = True
+                    z_p[qubit_j] = True
+                    cost_pauli_list.append(Pauli((z_p, x_p)))
+                    cost_coeffs.append(w_ij / 4)
+
+    for p in range(N):
+        cost_shift += A
+        for i in range(N):
+            qubit_i = qubit_index(i, p, N)
+            cost_shift += -A
+            x_p = np.zeros(num_qubits, dtype=bool)
+            z_p = np.zeros(num_qubits, dtype=bool)
+            z_p[qubit_i] = True
+            cost_pauli_list.append(Pauli((z_p, x_p)))
+            cost_coeffs.append(A)
+
+        for i in range(N):
+            for i_prime in range(i + 1, N):
+                qubit_i = qubit_index(i, p, N)
+                qubit_i_prime = qubit_index(i_prime, p, N)
+                cost_shift += A / 4
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_i] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-A / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_i_prime] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-A / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_i] = True
+                z_p[qubit_i_prime] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(A / 4)
+
+    for i in range(N):
+        cost_shift += A
+        for p in range(N):
+            qubit_p = qubit_index(i, p, N)
+            cost_shift += -A
+            x_p = np.zeros(num_qubits, dtype=bool)
+            z_p = np.zeros(num_qubits, dtype=bool)
+            z_p[qubit_p] = True
+            cost_pauli_list.append(Pauli((z_p, x_p)))
+            cost_coeffs.append(A)
+
+        for p in range(N):
+            for p_prime in range(p + 1, N):
+                qubit_p = qubit_index(i, p, N)
+                qubit_p_prime = qubit_index(i, p_prime, N)
+                cost_shift += A / 4
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_p] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-A / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_p_prime] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-A / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_p] = True
+                z_p[qubit_p_prime] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(A / 4)
+
+    for i, j, w in edges:
+        if partition[i] == partition[j]:
+            for p in range(N):
+                p_next = (p + 1) % N
+                qubit_i = qubit_index(i, p, N)
+                qubit_j = qubit_index(j, p_next, N)
+
+                cost_shift += (w * penalty_weight) / 4
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_i] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-(w * penalty_weight) / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_j] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append(-(w * penalty_weight) / 4)
+                x_p = np.zeros(num_qubits, dtype=bool)
+                z_p = np.zeros(num_qubits, dtype=bool)
+                z_p[qubit_i] = True
+                z_p[qubit_j] = True
+                cost_pauli_list.append(Pauli((z_p, x_p)))
+                cost_coeffs.append((w * penalty_weight) / 4)
+
+    cost_hamiltonian = SparsePauliOp(cost_pauli_list, coeffs=cost_coeffs)
+
+
+    mixing_pauli_list = []
+    mixing_coeffs = []
+    mixing_shift = 0
+
+    for qubit in range(num_qubits):
+        x_p = np.zeros(num_qubits, dtype=bool)
+        z_p = np.zeros(num_qubits, dtype=bool)
+        x_p[qubit] = True
+        mixing_pauli_list.append(Pauli((z_p, x_p)))
+        mixing_coeffs.append(1.0)
+
+
+    mixing_hamiltonian = SparsePauliOp(mixing_pauli_list, coeffs=mixing_coeffs)
+
+    return cost_hamiltonian, cost_shift, mixing_hamiltonian, mixing_shift
 
 
 def graph_coloring_cost_hemiltonian(n, edges, k):
