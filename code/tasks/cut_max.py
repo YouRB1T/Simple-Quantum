@@ -1,21 +1,42 @@
 import random
 
 
-def objective_function(edges, partition, penalty_weight=1.0):
+def objective_function(edges, partition,
+                       penalty_weight=1.0,
+                       balance_weight=0.1,
+                       important_weight=2.0,
+                       important_edges=None):
     """
-    Создаёт целевую функцию для задачи Max-Cut на основе графа.
 
     Args:
-        graph (list of tuples): Список рёбер графа.
-        partitions (list): списак принадлежности вершин к компонентам связанности
-    Returns:
-        function: Функция, которая вычисляет размер разреза для заданного разделения.
-    """
-    cut_size = sum(w for i, j, w in edges if partition[i] != partition[j])
+        edges:
+        partition:
+        penalty_weight:
+        balance_weight:
+        important_weight:
+        important_edges:
 
+    Returns:
+
+    """
+
+    cut_size = sum(w for i, j, w in edges if partition[i] != partition[j])
     penalty = sum(w * penalty_weight for i, j, w in edges if partition[i] == partition[j])
 
-    return cut_size - penalty
+    size_A = sum(partition)
+    size_B = len(partition) - size_A
+    balance_penalty = abs(size_A - size_B) * balance_weight
+
+    penalty_important = 0
+    if important_edges:
+        penalty_important = sum(
+            w * important_weight
+            for i, j, w in edges
+            if (i, j) in important_edges or (j, i) in important_edges
+            if partition[i] == partition[j]
+        )
+
+    return cut_size - penalty - balance_penalty - penalty_important
 
 
 def initial_solution(num_vertices):
@@ -47,6 +68,23 @@ def generate_neighbor_solution(partition):
     return new_partition
 
 
+def generate_neighbors(solution):
+    """
+
+    Args:
+        solution:
+
+    Returns:
+
+    """
+    neighbors = []
+    for i in range(len(solution)):
+        neighbor = solution.copy()
+        neighbor[i] = 1 - neighbor[i]
+        neighbors.append(neighbor)
+    return neighbors
+
+
 def crossover(parent1, parent2):
     """
     Выполняет одноточечное скрещивание между двумя решениями.
@@ -63,4 +101,14 @@ def crossover(parent1, parent2):
 
 
 def mutate(child):
+    """
+
+    Args:
+        child:
+
+    Returns:
+
+    """
+    index = random.randint(0, len(child) - 1)
+    child[index] = 1 - child[index]
     return child

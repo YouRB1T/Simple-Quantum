@@ -48,35 +48,39 @@ def simulated_annealing(objective_function, initial_solution, generate_neighbor_
 
         values.append(best_value)
 
-    ans_value = min(values)
     ans_time = time.time() - start_time
-    return best_solution, best_value, ans_time, ans_value
+    return best_solution, best_value, ans_time
 
 
-def genetic_algorithm(objective_function, initial_solution, generate_solution, mutate, crossover, num_vertices, edges,
+def genetic_algorithm(objective_function, initial_solution_fn, mutate, crossover, num_vertices, edges,
                       population_size=50, generations=100, mutation_rate=0.1):
     """
-    Простая реализация генетического алгоритма
+    Реализация стандартоного генетического алгоритма
+    Args:
+        objective_function: целевая функция задачи
+        initial_solution_fn: функция генерации начальных данных задачи
+        mutate: функция мутации
+        crossover: функция смешивания
+        num_vertices: кол-во вершин
+        edges: ребра
+        population_size: ращмер популяции
+        generations: кол-во поколений
+        mutation_rate: коэффициент мутации
 
-    :param objective_function: целевая функция задачи
-    :param generate_solution: функция генерации случайного решения
-    :param mutate: функция мутации
-    :param crossover: функция скрещивания
-    :param population_size: размер популяции
-    :param generations: кол-во поколений
-    :param mutation_rate: вероятность мутации
-    :return: taple(person_of_population, working_time)
-                возвращаем лучшего потомка, который будет лучшим по целевой функции, а также ремя работы метода
+    Returns:
+        best_solution: лучшее решение
+        elapsed_time: время работы алгоритма
+
     """
     start_time = time.time()
 
-    s = initial_solution(num_vertices)
+    population = [initial_solution_fn(num_vertices) for _ in range(population_size)]
 
-    population = [generate_solution(edges, s) for _ in range(population_size)]
+    def wrapped_fitness(partition):
+        return objective_function(edges, partition)
 
     for _ in range(generations):
-        population = sorted(population, key=objective_function, reverse=True)
-
+        population = sorted(population, key=wrapped_fitness, reverse=True)
         new_population = population[: population_size // 2]
 
         while len(new_population) < population_size:
@@ -88,24 +92,33 @@ def genetic_algorithm(objective_function, initial_solution, generate_solution, m
 
         population = new_population
 
-    return max(population, key=objective_function), time.time() - start_time
+    best_solution = max(population, key=wrapped_fitness)
+
+    elapsed_time = time.time() - start_time
+
+    return best_solution, elapsed_time, wrapped_fitness(best_solution)
 
 
-def tabu_search(objective_function, generate_neighbors, initial_solution, max_iter=100, tabu_size=10):
+
+def tabu_search(objective_function, generate_neighbors, initial_solution, edges,
+                num_vertices, max_iter=100, tabu_size=10):
     """
-    Алгоритм табу поиска
-    :param objective_function: целевая функция задачи
-    :param generate_neighbors: функция генерации соседей
-    :param initial_solution: начальное решение задачи
-    :param max_iter: кол-во максимальных итераций
-    :param tabu_size: размер табу списка
-    :return: taple(best_solution< working_time) вернем лучшее решение и время работы
-    """
-    stat_time = time.time()
+    Алгоритм табу поиска для задачи Max-Cut
 
-    current_solution = initial_solution
+    :param objective_function: функция оценки (cut_max.objective_function)
+    :param generate_neighbors: функция генерации соседей (cut_max.generate_neighbors)
+    :param initial_solution: функция генерации начального решения (cut_max.initial_solution)
+    :param edges: список рёбер графа
+    :param num_vertices: количество вершин графа
+    :param max_iter: число итераций
+    :param tabu_size: размер табу-списка
+    :return: (лучшая особь, время работы)
+    """
+    start_time = time.time()
+
+    current_solution = initial_solution(num_vertices)
     best_solution = current_solution
-    best_score = objective_function(best_solution)
+    best_score = objective_function(edges, best_solution)
 
     tabu_list = []
 
@@ -114,21 +127,21 @@ def tabu_search(objective_function, generate_neighbors, initial_solution, max_it
 
         neighbors = [n for n in neighbors if n not in tabu_list]
 
-        if not  neighbors:
+        if not neighbors:
             break
 
-        current_solution = max(neighbors, key=objective_function)
+        current_solution = max(neighbors, key=lambda sol: objective_function(edges, sol))
 
         tabu_list.append(current_solution)
         if len(tabu_list) > tabu_size:
             tabu_list.pop(0)
 
-        current_score = objective_function(current_solution)
+        current_score = objective_function(edges, current_solution)
         if current_score > best_score:
             best_solution = current_solution
             best_score = current_score
 
-    return best_solution, time.time() - stat_time
+    return best_solution, time.time() - start_time, best_score
 
 
 def ant_colony_optimization(distance_matrix,  num_ants=10, num_iterations=100, alpha=1, beta=2, evaporation=0.5):
@@ -155,8 +168,8 @@ def ant_colony_optimization(distance_matrix,  num_ants=10, num_iterations=100, a
 
         for _ in range(num_ants):
             path = np.random.permutation(num_nodes)
-            distance = sum(distance_matrix[path[i], path[i+1]] for i in range(num_nodes - 1))
-            distance += distance_matrix[path[-1], path[0]]
+            distance = sum(distance_matrix[path[i]][path[i+1]] for i in range(num_nodes - 1))
+            distance += distance_matrix[path[-1]][path[0]]
 
             all_paths.append(path)
             all_distances.append(distance)
