@@ -1,66 +1,70 @@
 import numpy as np
-import networkx as nx
-from qiskit_ibm_runtime import QAOA
+import time
+from qiskit import transpile
+from qiskit_ibm_runtime import QiskitRuntimeService, Estimator, Session
+from scipy.optimize import minimize
+from code.quantum import hemiltonians
+from qiskit.circuit.library import QAOAAnsatz
 
-from qiskit_algorithms.optimizers import COBYLA
-from qiskit_algorithms.utils import algorithm_globals
-from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, Session
-from qiskit_optimization.applications import Maxcut
-
-from code.tasks import cut_max
 from code.utils import max_cut_generator_graph
 
+# 1. Построение MaxCut‑графа на 5 вершинах
+n = 5
+edge_list = [
+    (0, 1, 1.0), (0, 2, 1.0), (0, 4, 1.0),
+    (1, 2, 1.0), (2, 3, 1.0), (3, 4, 1.0)
+]
 
-algorithm_globals.random_seed = 42
-# Генерация графа
-n = 4
-m = 3
-G = max_cut_generator_graph.create_weighted_graph(n, m)
-edge_labels = {k: f'{float(v):.3f}' for k, v in nx.get_edge_attributes(G, 'weight').items()}
-elist = [(*key, int(float(value))) for key, value in edge_labels.items()]
+G = max_cut_generator_graph.create_weighted_graph(127, 10)
+n = len(G)
+print(G.edges)
+edge_list = G.edges
 
-# Формирование матрицы весов
-w = np.zeros([n, n])
-for i in range(n):
-    for j in range(n):
-        temp = G.get_edge_data(i, j, default=0)
-        if temp != 0:
-            w[i, j] = temp["weight"]
+# 2. Гамильтониан и shift
+hamiltonian, shift = hemiltonians.max_cut_hemiltonian(edge_list, n)
 
-# Создание задачи Max-Cut
-max_cut = Maxcut(w)
-qp = max_cut.to_quadratic_program()
+# 3. QAOA‑Ansatz и начальные параметры
+reps = 2
+init_params = [np.pi, np.pi/2] * reps
+ansatz = QAOAAnsatz(cost_operator=hamiltonian, reps=reps)
 
-# Преобразование в Ising Hamiltonian
-qubitOp, offset = qp.to_ising()
-
-# Загрузка учетных данных IBM Quantum
+# 4. Подключаемся к IBM Runtime и берём самый быстрый симулятор на ≥127 кубитах
 service = QiskitRuntimeService()
-backend = service.least_busy(operational=True, simulator=False)
-session = Session(backend=backend)
-sampler = Sampler(mode=session)
+backend = service.least_busy(min_num_qubits=127)
+print(backend)
 
-# Создание решателя QAOA
-optimizer = COBYLA(maxiter=300)
+# 5. Транспилируем Ansatz под целевой backend (чтобы не было ошибки ISA)
+ansatz = transpile(ansatz, backend=backend, optimization_level=1)
 
-qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=2)
+# 6. Функция стоимости (EstimatorV2 требует mode=session)
+def cost(params, ansatz, hamiltonian, estimator):
+    pubs = [(ansatz, hamiltonian, params)]
+    job = estimator.run(pubs)
+    res  = job.result()
+    return res[0].data.evs[0] + shift
 
-# Вычисление минимального собственного значения
-result = qaoa.compute_minimum_eigenvalue(qubitOp)
+# 7. Запускаем Qiskit‑сессию и оптимизацию
+start = time.time()
+with Session(backend=backend) as session:
+    print(f"start session: {session.details}")
 
-# Получение решения
-x = max_cut.sample_most_likely(result.eigenstate)
+    # создаём EstimatorV2 через mode=session
+    estimator = Estimator(mode=session)
+    estimator.options.default_shots = 512
 
-# Вывод результатов
-print("🧮 Energy:", result.eigenvalue.real)
-print("⏱ Optimization time:", result.optimizer_time)
-print("📈 Max-Cut objective (adjusted):", result.eigenvalue.real + offset)
-print("🧩 Bitstring solution:", x)
-print("🎯 Cut value (custom):", cut_max.objective_function(elist, x))
-print("🎯 Cut value (Qiskit):", qp.objective.evaluate(x))
+    result = minimize(
+        cost,
+        init_params,
+        args=(ansatz, hamiltonian, estimator),
+        method="COBYLA",
+        tol=1e-2
+    )
+end = time.time()
 
-# --- 🔍 Название используемого бэкенда ---
-print("🖥️ Executed on backend:", backend.name)
-print(backend.configuration)
-print(backend.provider)
-print(backend.properties)
+# 8. Выводим результаты
+print("=== QAOA (Runtime) ===")
+print("Params:         ", result.x)
+print("Min energy+shift:", result.fun)
+print("Success:        ", result.success)
+print("Iterations:     ", getattr(result, "nit", None))
+print(f"Elapsed time:   {end - start:.2f} s")

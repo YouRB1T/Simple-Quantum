@@ -1,28 +1,38 @@
+import random
+
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp, Pauli
 from qiskit.circuit.library import QAOAAnsatz
+
+weight_range = 1
 
 def max_cut_hemiltonian(ages, n):
     pauli_list = []
     coeffs = []
     shift = 0
 
-    for i, j, w in ages:
-        x_p = np.zeros(n, dtype=bool)
-        z_p = np.zeros(n, dtype=bool)
-        z_p[i] = True
-        z_p[j] = True
-        pauli_list.append(Pauli((z_p, x_p)))
-        coeffs.append(-0.5)
-        shift += 0.5
+    for i, j, data in ages:
+        # Если 'weight' есть в данных, используем его, иначе генерируем случайный вес
+        w = data.get('weight', weight_range)
 
-    for i, j, w in ages:
         x_p = np.zeros(n, dtype=bool)
         z_p = np.zeros(n, dtype=bool)
         z_p[i] = True
         z_p[j] = True
         pauli_list.append(Pauli((z_p, x_p)))
-        coeffs.append(1.0)
+        coeffs.append(-0.5 * w)  # Умножаем на вес
+        shift += 0.5 * w  # Также с учётом веса
+
+    for i, j, data in ages:
+        # Если 'weight' есть в данных, используем его, иначе генерируем случайный вес
+        w = data.get('weight', weight_range)
+
+        x_p = np.zeros(n, dtype=bool)
+        z_p = np.zeros(n, dtype=bool)
+        z_p[i] = True
+        z_p[j] = True
+        pauli_list.append(Pauli((z_p, x_p)))
+        coeffs.append(1.0 * w)  # Умножаем на вес
 
     shift += n
 
