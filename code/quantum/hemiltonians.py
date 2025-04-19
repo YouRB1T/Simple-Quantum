@@ -12,8 +12,38 @@ def max_cut_hemiltonian(ages, n):
     shift = 0
 
     for i, j, data in ages:
-        # Если 'weight' есть в данных, используем его, иначе генерируем случайный вес
         w = data.get('weight', weight_range)
+
+        x_p = np.zeros(n, dtype=bool)
+        z_p = np.zeros(n, dtype=bool)
+        z_p[i] = True
+        z_p[j] = True
+        pauli_list.append(Pauli((z_p, x_p)))
+        coeffs.append(-0.5 * w)
+        shift += 0.5 * w
+
+    for i, j, data in ages:
+        w = data.get('weight', weight_range)
+
+        x_p = np.zeros(n, dtype=bool)
+        z_p = np.zeros(n, dtype=bool)
+        z_p[i] = True
+        z_p[j] = True
+        pauli_list.append(Pauli((z_p, x_p)))
+        coeffs.append(1.0 * w)
+
+    shift += n
+
+    return SparsePauliOp(pauli_list, coeffs=coeffs), shift
+
+
+def yan_max_cut_hemiltonian(ages, n):
+    pauli_list = []
+    coeffs = []
+    shift = 0
+
+    for i, j in ages:
+        w = 1
 
         x_p = np.zeros(n, dtype=bool)
         z_p = np.zeros(n, dtype=bool)
@@ -23,9 +53,8 @@ def max_cut_hemiltonian(ages, n):
         coeffs.append(-0.5 * w)  # Умножаем на вес
         shift += 0.5 * w  # Также с учётом веса
 
-    for i, j, data in ages:
-        # Если 'weight' есть в данных, используем его, иначе генерируем случайный вес
-        w = data.get('weight', weight_range)
+    for i, j in ages:
+        w = 1
 
         x_p = np.zeros(n, dtype=bool)
         z_p = np.zeros(n, dtype=bool)

@@ -167,7 +167,6 @@ def tabu_search(objective_function, generate_neighbors, initial_solution,
 
 def ant_colony_optimization(distance_matrix, num_ants=10, num_iterations=100,
                             alpha=1, beta=2, evaporation=0.5):
-    """Муравьиный алгоритм с метриками."""
     start_time = time.time()
     evals = 0
     history = []
@@ -193,7 +192,6 @@ def ant_colony_optimization(distance_matrix, num_ants=10, num_iterations=100,
                 best_path = path.copy()
         history.append(best_dist)
 
-        # испарение + обновление феромонов
         pheromones *= (1-evaporation)
         for path, dist in zip(all_paths, all_dists):
             for i in range(num_nodes-1):
