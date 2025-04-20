@@ -42,7 +42,6 @@ with Session(backend=backend) as session:
         cost,
         init_params,
         args=(ansatz, hamiltonian, estimator),
-        method="COBYLA",
         tol=1e-2
     )
     elapsed = time.time() - start

@@ -6,7 +6,7 @@ from collections import deque
 import numpy as np
 
 def simulated_annealing(objective_function, initial_solution, generate_neighbor_solution,
-                        num_vertices, edges, t=1000, t_min=0.01, alpha=0.95, max_iterations=1000, min_delta=1e-6, window_size=5):
+                        num_vertices, edges, t=1400, t_min=2.1, alpha=0.441, max_iterations=1000, min_delta=1e-6, window_size=5):
     s = initial_solution(num_vertices)
     best_solution = s.copy()
     best_value = objective_function(edges, s)
@@ -142,7 +142,8 @@ def tabu_search(objective_function, generate_neighbors, initial_solution,
             best_score = cur_score
             best = current.copy()
 
-        best_probability = 1 / (1 + best_score)
+        denominator = 1 + best_score
+        best_probability = 1 / denominator if denominator != 0 else float('inf')
 
         history.append(best_score)
 
