@@ -46,7 +46,7 @@ for n in tqdm(range(5, 21), desc="Размеры графа"):
         "best_value": -study.best_value,
     }
 
-with open("../tabu_search_optuna_results.json", "w") as f:
+with open("tabu_search_optuna_results.json", "w") as f:
     json.dump(results, f, indent=4)
 
 for n in sorted(results):

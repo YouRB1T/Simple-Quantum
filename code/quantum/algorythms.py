@@ -4,7 +4,7 @@ import numpy as np
 from qiskit.circuit.library import TwoLocal
 from qiskit.primitives import Sampler
 from qiskit_algorithms import QAOA
-from qiskit_algorithms.optimizers import SPSA, COBYLA
+from qiskit_algorithms.optimizers import SPSA, COBYLA, ADAM, L_BFGS_B, NELDER_MEAD, POWELL, SLSQP, TNC
 from qiskit_algorithms.utils import algorithm_globals
 from qiskit_optimization.applications import Maxcut
 from qiskit.qasm2 import dumps as qasm_dumps
@@ -12,13 +12,14 @@ from qiskit.qasm2 import dumps as qasm_dumps
 from code.tasks import cut_max
 
 
-def qaoa_solver(n, G, elist, reps=2):
+def qaoa_solver(n, G, elist, reps=2, optimizer_type="COBYLA", maxiter=300):
     w = np.zeros([n, n])
     for i in range(n):
         for j in range(n):
             temp = G.get_edge_data(i, j, default=0)
             if temp != 0:
                 w[i, j] = temp["weight"]
+                w[j, i] = temp["weight"]
 
     max_cut = Maxcut(w)
     qp = max_cut.to_quadratic_program()
@@ -27,7 +28,26 @@ def qaoa_solver(n, G, elist, reps=2):
 
     algorithm_globals.random_seed = 123
 
-    optimizer = COBYLA(maxiter=300)
+    optimizer_type = optimizer_type.upper()
+    if optimizer_type == "COBYLA":
+        optimizer = COBYLA(maxiter=maxiter)
+    elif optimizer_type == "SPSA":
+        optimizer = SPSA(maxiter=maxiter)
+    elif optimizer_type == "ADAM":
+        optimizer = ADAM(maxiter=maxiter)
+    elif optimizer_type == "L_BFGS_B":
+        optimizer = L_BFGS_B(maxiter=maxiter)
+    elif optimizer_type == "NELDER_MEAD":
+        optimizer = NELDER_MEAD(maxiter=maxiter)
+    elif optimizer_type == "POWELL":
+        optimizer = POWELL(maxiter=maxiter)
+    elif optimizer_type == "SLSQP":
+        optimizer = SLSQP(maxiter=maxiter)
+    elif optimizer_type == "TNC":
+        optimizer = TNC(maxiter=maxiter)
+    else:
+        raise ValueError(f"Неизвестный оптимизатор: {optimizer_type}")
+
     qaoa = QAOA(sampler=Sampler(), optimizer=optimizer, reps=reps)
 
     result = qaoa.compute_minimum_eigenvalue(qubitOp)
