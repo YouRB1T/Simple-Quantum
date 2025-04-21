@@ -40,7 +40,6 @@ def make_objective(n, graph_list):
                 else:
                     raise ValueError("QAOA result missing 'optimal_value'")
             except Exception as e:
-                print(f"⚠️ Ошибка при выполнении QAOA: {e}")
                 continue
 
         if values:

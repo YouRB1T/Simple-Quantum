@@ -8,33 +8,21 @@ weight_range = 1
 
 def max_cut_hemiltonian(ages, n):
     pauli_list = []
-    coeffs = []
     shift = 0
 
     for i, j, data in ages:
-        w = data.get('weight', weight_range)
+        pauli_list = []
+        for edge in ages:
+            paulis = ["I"] * n
+            paulis[edge[0]], paulis[edge[1]] = "Z", "Z"
 
-        x_p = np.zeros(n, dtype=bool)
-        z_p = np.zeros(n, dtype=bool)
-        z_p[i] = True
-        z_p[j] = True
-        pauli_list.append(Pauli((z_p, x_p)))
-        coeffs.append(-0.5 * w)
-        shift += 0.5 * w
+            weight = data.get('weight', weight_range)
 
-    for i, j, data in ages:
-        w = data.get('weight', weight_range)
+            pauli_list.append(("".join(paulis)[::-1], weight))
+        shift += 0.5 * weight
 
-        x_p = np.zeros(n, dtype=bool)
-        z_p = np.zeros(n, dtype=bool)
-        z_p[i] = True
-        z_p[j] = True
-        pauli_list.append(Pauli((z_p, x_p)))
-        coeffs.append(1.0 * w)
 
-    shift += n
-
-    return SparsePauliOp(pauli_list, coeffs=coeffs), shift
+    return SparsePauliOp.from_list(pauli_list), shift
 
 
 def yan_max_cut_hemiltonian(ages, n):

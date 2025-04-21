@@ -30,11 +30,9 @@ def load_best_params(filename, n):
     return params_by_size[str(n)]["best_params"]
 
 
-# Размерности графов: от 5 до 10
-for n in range(10, 16):
+for n in range(5, 6):
     print(f"\n==== Размер графа: {n} ====")
 
-    # Загрузка параметров из файлов
     sa_params = load_best_params("C:\\Users\\Dont_use_user\\PycharmProjects\\Simple-Quantum\\code\\results\\simulated_annealing_optuna_results.json", n)
     ga_params = load_best_params("C:\\Users\\Dont_use_user\\PycharmProjects\\Simple-Quantum\\code\\results\\genetic_optuna_results.json", n)
     ts_params = load_best_params("C:\\Users\\Dont_use_user\\PycharmProjects\\Simple-Quantum\\code\\results\\tabu_search_optuna_results.json", n)
@@ -44,7 +42,8 @@ for n in range(10, 16):
         "simulated_annealing": [],
         "genetic_algorithm": [],
         "tabu_search": [],
-        "qaoa": []
+        "qaoa": [],
+        "random_baseline": []
     }
 
     num_graphs = 100
@@ -56,7 +55,6 @@ for n in range(10, 16):
         edge_labels = nx.get_edge_attributes(G, 'weight')
         edges = [(u, v, float(w)) for (u, v), w in edge_labels.items()]
 
-        # Simulated Annealing
         sa_result = algorithms_optimization.simulated_annealing(
             objective_function=cut_max.objective_function,
             initial_solution=cut_max.initial_solution,
@@ -67,7 +65,6 @@ for n in range(10, 16):
         )
         results["simulated_annealing"].append(sa_result)
 
-        # Genetic Algorithm
         ga_result = algorithms_optimization.genetic_algorithm(
             objective_function=cut_max.objective_function,
             initial_solution_fn=cut_max.initial_solution,
@@ -79,7 +76,6 @@ for n in range(10, 16):
         )
         results["genetic_algorithm"].append(ga_result)
 
-        # Tabu Search
         ts_result = algorithms_optimization.tabu_search(
             objective_function=cut_max.objective_function,
             generate_neighbors=cut_max.generate_neighbors,
@@ -90,7 +86,6 @@ for n in range(10, 16):
         )
         results["tabu_search"].append(ts_result)
 
-        # QAOA
         reps = qaoa_params["reps"]
         maxiter = qaoa_params.get("maxiter")
         optimizer_name = qaoa_params.get("optimizer")
@@ -105,7 +100,18 @@ for n in range(10, 16):
         )
         results["qaoa"].append(qaoa_result)
 
-    # Сохраняем после всех 100 графов для текущего n
+        rand_vals = []
+        for _ in range(10):
+            random_partition = cut_max.initial_solution(n)
+            val = cut_max.objective_function(edges, random_partition)
+            rand_vals.append(val)
+        mean_rand_val = np.mean(rand_vals)
+
+        results["random_baseline"].append({
+            "mean_value": mean_rand_val,
+            "values": rand_vals
+        })
+
     serializable_results = make_json_serializable(results)
     with open(f"benchmark_results_{n}.json", "w") as f:
         dump(serializable_results, f, indent=2)

@@ -19,24 +19,10 @@ def objective_function(edges, partition,
     Returns:
 
     """
-
     cut_size = sum(w for i, j, w in edges if partition[i] != partition[j])
-    penalty = sum(w * penalty_weight for i, j, w in edges if partition[i] == partition[j])
 
-    size_A = sum(partition)
-    size_B = len(partition) - size_A
-    balance_penalty = abs(size_A - size_B) * balance_weight
 
-    penalty_important = 0
-    if important_edges:
-        penalty_important = sum(
-            w * important_weight
-            for i, j, w in edges
-            if (i, j) in important_edges or (j, i) in important_edges
-            if partition[i] == partition[j]
-        )
-
-    return cut_size - penalty - balance_penalty - penalty_important
+    return cut_size
 
 
 def initial_solution(num_vertices):

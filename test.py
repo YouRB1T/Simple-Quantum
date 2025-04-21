@@ -1,68 +1,70 @@
+import json
 import numpy as np
-import time
-from qiskit import transpile
-from scipy.optimize import minimize
-from qiskit_ibm_runtime import QiskitRuntimeService, Estimator, Sampler, Session, EstimatorOptions, SamplerOptions
-from qiskit.circuit.library import QAOAAnsatz
+import matplotlib.pyplot as plt
+import networkx as nx
 
-from code.utils import max_cut_generator_graph
-from code.quantum import hemiltonians
+from code.tasks.cut_max import objective_function
 
-G = max_cut_generator_graph.create_weighted_graph(127, 1)
-n = len(G.nodes)
-edge_list = list(G.edges(data=True))
-print("Рёбра графа:", edge_list)
+n = 5
+# Загрузка результатов из JSON
+filename = f'benchmark_results_{n}.json'
+with open(filename, 'r') as f:
+    data = json.load(f)
 
-hamiltonian, shift = hemiltonians.max_cut_hemiltonian(edge_list, n)
+# Предполагаем, что результаты лежат в виде словарей по алгоритмам
+# Для примера возьмем QAOA, Simulated Annealing, Genetic Algorithm, Tabu Search
+algorithms = ['qaoa', 'genetic_algorithm', 'tabu_search']
 
-reps = 2
-init_params = [np.pi, np.pi/2] * reps
-ansatz = QAOAAnsatz(cost_operator=hamiltonian, reps=reps)
+# Загрузка графа (предположим, что граф генерируется здесь)  # примерный размер графа
+m = 3
+G = nx.gnp_random_graph(n, 0.5)  # Сгенерируем случайный граф с n вершинами
 
-service = QiskitRuntimeService()
-backend = service.least_busy(simulator=False, operational=True, min_num_qubits=n)
-print("Используем бэкенд:", backend.name)
+# Преобразуем граф в формат, используемый в функции objective_function
+edges = [(u, v, 1.0) for u, v in G.edges()]  # Предполагаем, что веса рёбер равны 1.0
 
-ansatz = transpile(ansatz, backend=backend, optimization_level=1)
+# Список для хранения результатов целевой функции для разных алгоритмов
+efficiency_values = {}
 
-def cost(params, ansatz, hamiltonian, estimator):
-    pubs = [(ansatz, hamiltonian, params)]
-    job = estimator.run(pubs)
-    pub_result = job.result()[0]
-    ev = pub_result.data.evs
-    return ev + shift
+# Проходим по каждому алгоритму и рассчитываем значение целевой функции для каждой итерации
+for algo in algorithms:
+    print(f"Обработка {algo}...")
 
-start = time.time()
-with Session(backend=backend) as session:
-    est_opts = EstimatorOptions()
-    est_opts.default_shots = 100
-    estimator = Estimator(mode=session, options=est_opts)
+    efficiency_value = []
 
-    result = minimize(
-        cost,
-        init_params,
-        args=(ansatz, hamiltonian, estimator),
-        tol=1e-2
-    )
-    elapsed = time.time() - start
+    for idx, result in enumerate(data[algo]):
 
-    optimal_params = result.x
-    print("Оптимальные параметры:", optimal_params)
-    print("Время оптимизации:", elapsed)
+        if algo == 'qaoa':
+            bitstring = result.get('best_measurement', {}).get('bitstring', '')
+            total_time = result.get('total_time', None)
+            if bitstring and total_time is not None and total_time > 0:
+                partition = [int(bit) for bit in bitstring]  # Преобразуем битстроку в разбиение
+                objective_value = objective_function(edges, partition)  # Рассчитываем целевую функцию
+                efficiency = objective_value / total_time
+                efficiency_value.append(efficiency)
 
-    bound_circuit = ansatz.assign_parameters(optimal_params)
-    bound_circuit.measure_all()
+        else:
+            best_value = result.get('best_value', None)
+            total_time = result.get('total_time', None)
+            if best_value is not None and total_time is not None and total_time > 0:
+                efficiency = best_value / total_time
+                efficiency_value.append(efficiency)
 
-    sampler_opts = SamplerOptions(shots=100)
-    sampler = Sampler(mode=session, options=sampler_opts)
-    samp_job = sampler.run([bound_circuit])
-    quasi_dist = samp_job.result().quasi_dists[0]
+    efficiency_values[algo] = np.mean(efficiency_value)
 
-best_bitstring = max(quasi_dist, key=quasi_dist.get)
-prob = quasi_dist[best_bitstring]
-bit_str = best_bitstring if isinstance(best_bitstring, str) else format(best_bitstring, f'0{n}b')
-bits = np.array([int(b) for b in bit_str])
+plt.figure(figsize=(10, 6))
 
-print("Лучшая строка:", bit_str)
-print("Массив битов:", bits)
-print("Вероятность:", prob)
+# Столбцы для каждого алгоритма
+plt.bar(efficiency_values.keys(), efficiency_values.values(), color=['blue', 'red', 'green', 'purple'])
+
+# Оформление графика
+plt.xlabel('Алгоритмы', fontsize=14)
+plt.ylabel('Среднее значение целевой функции', fontsize=14)
+plt.title(f'Среднее значение целевой функции {n} вершинных графов для различных алгоритмов', fontsize=16)
+
+# Добавление значений на вершине столбцов для лучшего восприятия
+for i, v in enumerate(efficiency_values.values()):
+    plt.text(i, v + 0.05, round(v, 2), ha='center', va='bottom', fontsize=12)
+
+# Показываем график
+plt.tight_layout()
+plt.show()

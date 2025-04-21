@@ -2,7 +2,7 @@
     "5": {
         "best_params": {
             "optimizer": "NELDER_MEAD",
-            "reps": 1,
+            "reps": 2,
             "maxiter": 107
         },
         "best_value": -3.200757923595448
@@ -42,7 +42,7 @@
     "10": {
         "best_params": {
             "optimizer": "SPSA",
-            "reps": 3,
+            "reps": 1,
             "maxiter": 235
         },
         "best_value": -2.503349470998298

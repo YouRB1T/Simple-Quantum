@@ -20,17 +20,12 @@ for algo in algos:
     prob_vals = []
     iter_vals = []
     for e in entries:
-        # Total time and best measurement probability
         t = e.get('total_time', np.nan)
         p = e.get('best_measurement_probability',
                   e.get('best_measurement', {}).get('probability', np.nan))
-        # Speed = probability / time
         spd_vals.append(p / t if t and t > 0 else np.nan)
-        # Quality: best_value
         q_vals.append(e.get('best_value', np.nan))
-        # Success probability
         prob_vals.append(p)
-        # Iterations or related metric
         if 'iterations' in e and e['iterations'] is not None:
             iter_vals.append(e['iterations'])
         elif 'generations' in e and e['generations'] is not None:

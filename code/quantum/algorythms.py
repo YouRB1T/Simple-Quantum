@@ -1,15 +1,13 @@
 from json import dumps
 
 import numpy as np
-from qiskit.circuit.library import TwoLocal
 from qiskit.primitives import Sampler
 from qiskit_algorithms import QAOA
 from qiskit_algorithms.optimizers import SPSA, COBYLA, ADAM, L_BFGS_B, NELDER_MEAD, POWELL, SLSQP, TNC
 from qiskit_algorithms.utils import algorithm_globals
 from qiskit_optimization.applications import Maxcut
 from qiskit.qasm2 import dumps as qasm_dumps
-
-from code.tasks import cut_max
+from code.tasks.cut_max import objective_function
 
 
 def qaoa_solver(n, G, elist, reps=2, optimizer_type="COBYLA", maxiter=300):
@@ -52,20 +50,22 @@ def qaoa_solver(n, G, elist, reps=2, optimizer_type="COBYLA", maxiter=300):
 
     result = qaoa.compute_minimum_eigenvalue(qubitOp)
 
-    return serialize_sampling_vqe_result(result)
+    bitstring = result.best_measurement.get("bitstring")
+
+    partition = [int(bit) for bit in bitstring]
+
+    return serialize_sampling_vqe_result(result, objective_function(elist, partition))
 
 
-def serialize_sampling_vqe_result(result):
+def serialize_sampling_vqe_result(result, objective):
     aux = result.aux_operators_evaluated
     best_meas = result.best_measurement
     cost_evals = result.cost_function_evals
 
-    # Преобразуем QuasiDistribution в обычный словарь
     eigen_dist = dict(result.eigenstate)
 
     eig = result.eigenvalue
 
-    # 🔧 ПРИВЯЗЫВАЕМ ПАРАМЕТРЫ перед сериализацией в QASM
     bound_circuit = result.optimal_circuit.assign_parameters(result.optimal_parameters)
     circ = qasm_dumps(bound_circuit)
 
@@ -87,6 +87,7 @@ def serialize_sampling_vqe_result(result):
     return {
         "aux_operators_evaluated": aux,
         "best_measurement": best_meas,
+        "best_objective": objective,
         "cost_function_evals": cost_evals,
         "eigenstate": eigen_dist,
         "eigenvalue": eig,
