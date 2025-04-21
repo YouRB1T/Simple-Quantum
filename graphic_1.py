@@ -5,7 +5,7 @@ filename = 'benchmark_results_5.json'
 with open(filename, 'r') as f:
     data = json.load(f)
 
-algorithms = ['qaoa', 'simulated_annealing', 'genetic_algorithm', 'tabu_search', 'random_baseline']
+algorithms = ['qaoa', 'simulated_annealing', 'genetic_algorithm', 'tabu_search']
 results = {algo: [] for algo in algorithms}
 
 for algo in algorithms:
@@ -30,7 +30,6 @@ styles = {
     'simulated_annealing': {'color': 'red', 'linestyle': '--', 'marker': 'x', 'label': 'Simulated Annealing'},
     'genetic_algorithm': {'color': 'green', 'linestyle': '-.', 'marker': 's', 'label': 'Genetic Algorithm'},
     'tabu_search': {'color': 'purple', 'linestyle': ':', 'marker': 'D', 'label': 'Tabu Search'},
-    'random_baseline': {'color': 'yellow', 'linestyle': '-', 'marker': 'D', 'label': 'Random'}
 }
 
 print(results.get('random_baseline'))

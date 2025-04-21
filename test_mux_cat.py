@@ -30,7 +30,7 @@ def load_best_params(filename, n):
     return params_by_size[str(n)]["best_params"]
 
 
-for n in range(5, 6):
+for n in range(9, 10):
     print(f"\n==== Размер графа: {n} ====")
 
     sa_params = load_best_params("C:\\Users\\Dont_use_user\\PycharmProjects\\Simple-Quantum\\code\\results\\simulated_annealing_optuna_results.json", n)
@@ -46,7 +46,7 @@ for n in range(5, 6):
         "random_baseline": []
     }
 
-    num_graphs = 100
+    num_graphs = 50
     m = 3
     graphs = [max_cut_generator_graph.create_weighted_graph(n, m) for _ in range(num_graphs)]
 

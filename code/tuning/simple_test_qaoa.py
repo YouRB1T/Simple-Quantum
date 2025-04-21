@@ -51,8 +51,8 @@ def make_objective(n, graph_list):
 
 
 
-for n in tqdm(range(11, 16), desc="Размеры графа"):
-    graph_list = [max_cut_generator_graph.create_weighted_graph(n, int(n * 1.5)) for _ in range(10)]
+for n in tqdm(range(5, 6), desc="Размеры графа"):
+    graph_list = [max_cut_generator_graph.create_weighted_graph(n, int(n * 0.5)) for _ in range(10)]
 
     study = optuna.create_study(direction="minimize")
     study.optimize(make_objective(n, graph_list), n_trials=5)

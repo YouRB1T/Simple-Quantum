@@ -1,130 +1,50 @@
 {
     "5": {
         "best_params": {
-            "population_size": 72,
-            "mutation_rate": 0.25373068195250387,
-            "generations": 286
+            "population_size": 90,
+            "mutation_rate": 0.1235213018431841,
+            "generations": 223
         },
-        "best_value": 24.620000000000005
+        "best_value": 28.04
     },
     "6": {
         "best_params": {
-            "population_size": 137,
-            "mutation_rate": 0.07227535843900981,
-            "generations": 207
+            "population_size": 160,
+            "mutation_rate": 0.10865563579240159,
+            "generations": 68
         },
-        "best_value": 33.224000000000004
+        "best_value": 40.54
     },
     "7": {
         "best_params": {
-            "population_size": 131,
-            "mutation_rate": 0.11015209766460014,
-            "generations": 53
+            "population_size": 125,
+            "mutation_rate": 0.19007925440084739,
+            "generations": 202
         },
-        "best_value": 38.996
+        "best_value": 55.06
     },
     "8": {
         "best_params": {
-            "population_size": 143,
-            "mutation_rate": 0.25628719370586284,
-            "generations": 278
+            "population_size": 169,
+            "mutation_rate": 0.19050085793954727,
+            "generations": 168
         },
-        "best_value": 46.10400000000001
+        "best_value": 69.08
     },
     "9": {
         "best_params": {
-            "population_size": 183,
-            "mutation_rate": 0.02184281202313469,
-            "generations": 227
+            "population_size": 173,
+            "mutation_rate": 0.2808020155247138,
+            "generations": 225
         },
-        "best_value": 55.251999999999995
+        "best_value": 84.64
     },
     "10": {
         "best_params": {
-            "population_size": 181,
-            "mutation_rate": 0.23552181969088973,
-            "generations": 209
+            "population_size": 178,
+            "mutation_rate": 0.22551109068763286,
+            "generations": 178
         },
-        "best_value": 59.71200000000001
-    },
-    "11": {
-        "best_params": {
-            "population_size": 160,
-            "mutation_rate": 0.2523845186232597,
-            "generations": 256
-        },
-        "best_value": 67.432
-    },
-    "12": {
-        "best_params": {
-            "population_size": 175,
-            "mutation_rate": 0.28215996667704835,
-            "generations": 191
-        },
-        "best_value": 75.34400000000001
-    },
-    "13": {
-        "best_params": {
-            "population_size": 153,
-            "mutation_rate": 0.1706238302837627,
-            "generations": 241
-        },
-        "best_value": 79.52
-    },
-    "14": {
-        "best_params": {
-            "population_size": 187,
-            "mutation_rate": 0.2660226916606493,
-            "generations": 66
-        },
-        "best_value": 87.87200000000001
-    },
-    "15": {
-        "best_params": {
-            "population_size": 200,
-            "mutation_rate": 0.031046704527415855,
-            "generations": 300
-        },
-        "best_value": 95.228
-    },
-    "16": {
-        "best_params": {
-            "population_size": 190,
-            "mutation_rate": 0.25222264012023526,
-            "generations": 31
-        },
-        "best_value": 100.64399999999999
-    },
-    "17": {
-        "best_params": {
-            "population_size": 194,
-            "mutation_rate": 0.03469845843975916,
-            "generations": 197
-        },
-        "best_value": 107.83199999999997
-    },
-    "18": {
-        "best_params": {
-            "population_size": 179,
-            "mutation_rate": 0.11781477034681742,
-            "generations": 52
-        },
-        "best_value": 113.17200000000001
-    },
-    "19": {
-        "best_params": {
-            "population_size": 150,
-            "mutation_rate": 0.20894389279097864,
-            "generations": 228
-        },
-        "best_value": 117.47999999999998
-    },
-    "20": {
-        "best_params": {
-            "population_size": 185,
-            "mutation_rate": 0.20300717288794123,
-            "generations": 176
-        },
-        "best_value": 126.12400000000001
+        "best_value": 107.44
     }
 }
